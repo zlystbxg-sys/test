@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="www.iec.ch/public/TC65SC65BWG7TF10" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" schemaVersion="1.000" xsi:schemaLocation="www.iec.ch/public/TC65SC65BWG7TF10 GXW3_IEC61131_10_Ed1_0_ForGXW3.xsd">
+  <FileHeader companyName="MITSUBISHI ELECTRIC CORPORATION" companyURL="http://www.mitsubishielectric.com" productName="GX Works3" productVersion="ver.1.0" />
+  <ContentHeader name="FX5U电机控制系统" creationDateTime="2026-01-11T15:12:00+10:00" modificationDateTime="2026-01-11T15:12:01+10:00" />
+  <Types>
+    <GlobalNamespace>
+      <AddData>
+        <Data name="http://www.mitsubishielectric.com/xml/FbFiles" handleUnknown="implementation">
+          <FbFiles>
+            <FbFile name="FbFile1" functionBlockType="macro" />
+          </FbFiles>
+        </Data>
+      </AddData>
+
+      <Program name="Motor_Control">
+        <AddData>
+          <Data name="http://www.mitsubishielectric.com/xml/PouProperties" handleUnknown="implementation">
+            <PouProperties title="Motor_Control" version="ver.1.000" helpFilePath="" supportVersion="1.000W" />
+          </Data>
+        </AddData>
+
+        <Vars constant="false" accessSpecifier="private">
+          <Variable name="Motor_Run_Command"><Type><TypeName>BOOL</TypeName></Type></Variable>
+          <Variable name="Protection_OK"><Type><TypeName>BOOL</TypeName></Type></Variable>
+          <Variable name="Start_Condition"><Type><TypeName>BOOL</TypeName></Type></Variable>
+          <Variable name="Stop_Condition"><Type><TypeName>BOOL</TypeName></Type></Variable>
+          <Variable name="Fault_Status"><Type><TypeName>BOOL</TypeName></Type></Variable>
+          <Variable name="Start_Delay_Timer"><Type><TypeName>TON</TypeName></Type></Variable>
+          <Variable name="Fault_Reset_Timer"><Type><TypeName>TON</TypeName></Type></Variable>
+          <Variable name="START_DELAY_TIME"><Type><TypeName>TIME</TypeName></Type></Variable>
+          <Variable name="FAULT_RESET_TIME"><Type><TypeName>TIME</TypeName></Type></Variable>
+        </Vars>
+
+        <MainBody>
+          <BodyContent xsi:type="ST">
+            <ST>(*
+================================================================================
+FX5U PLC 电机控制程序 (ST语言)
+功能: 电机启动/停止控制，带保护功能和状态指示
+作者: PLC程序
+日期: 2026-01-11
+版本: V1.0
+================================================================================
+*)
+
+(* ========== 参数初始化 ========== *)
+IF START_DELAY_TIME = T#0MS THEN
+    START_DELAY_TIME := T#500MS;
+END_IF;
+
+IF FAULT_RESET_TIME = T#0MS THEN
+    FAULT_RESET_TIME := T#3S;
+END_IF;
+
+(* ========== 保护条件检查 ========== *)
+(* 检查所有保护输入（常闭触点，正常时为TRUE） *)
+Protection_OK := gEmergency_Stop AND gOverload_Relay AND gThermal_Switch;
+
+(* ========== 故障检测 ========== *)
+(* 故障条件：任一保护条件不满足 *)
+Fault_Status := NOT Protection_OK;
+
+(* ========== 启动条件判断 ========== *)
+(* 启动条件：按下启动按钮 且 保护正常 且 无故障状态 *)
+Start_Condition := gStart_Button AND Protection_OK AND NOT Fault_Status;
+
+(* ========== 停止条件判断 ========== *)
+(* 停止条件：按下停止按钮 或 出现故障 *)
+Stop_Condition := gStop_Button OR Fault_Status;
+
+(* ========== 电机控制逻辑 ========== *)
+(* 启动延时定时器 *)
+Start_Delay_Timer(
+    IN := Start_Condition AND NOT Motor_Run_Command,
+    PT := START_DELAY_TIME
+);
+
+(* 电机运行命令 - 自保持逻辑 *)
+IF Start_Delay_Timer.Q THEN
+    Motor_Run_Command := TRUE;
+ELSIF Stop_Condition THEN
+    Motor_Run_Command := FALSE;
+END_IF;
+
+(* 电机接触器输出 *)
+gMotor_Contactor := Motor_Run_Command AND Protection_OK;
+
+(* ========== 故障复位逻辑 ========== *)
+(* 故障复位定时器 - 故障消除后自动复位 *)
+Fault_Reset_Timer(
+    IN := Protection_OK AND Fault_Status,
+    PT := FAULT_RESET_TIME
+);
+
+(* 故障状态复位 *)
+IF Fault_Reset_Timer.Q THEN
+    Fault_Status := FALSE;
+END_IF;
+
+(* ========== 状态指示灯控制 ========== *)
+
+(* 就绪指示灯（黄灯）- 系统正常但电机未运行 *)
+gReady_Indicator := Protection_OK AND NOT Motor_Run_Command AND NOT Fault_Status;
+
+(* 运行指示灯（绿灯）- 电机正在运行 *)
+gRun_Indicator := gMotor_Contactor AND gMotor_Feedback;
+
+(* 故障指示灯（红灯）- 系统故障 *)
+gFault_Indicator := Fault_Status;
+</ST>
+          </BodyContent>
+        </MainBody>
+      </Program>
+
+    </GlobalNamespace>
+  </Types>
+
+  <Instances>
+    <Configuration name="config1">
+      <Resource name="MainScan" resourceTypeName="prgFile">
+        <AddData>
+          <Data name="http://www.mitsubishielectric.com/xml/ProgramFileProperties" handleUnknown="implementation">
+            <ProgramFileProperties title="MainScan" />
+          </Data>
+          <Data name="http://www.mitsubishielectric.com/xml/ResourceExecutionType" handleUnknown="implementation">
+            <ResourceExecutionType type="scan" />
+          </Data>
+        </AddData>
+        <ProgramInstance name="Motor_Control" typeName="pou" evaluationOrder="1" />
+      </Resource>
+
+      <GlobalVars constant="false">
+        <AddData>
+          <Data name="http://www.mitsubishielectric.com/xml/GlobalVarsProperties" handleUnknown="implementation">
+            <GlobalVarsProperties name="InputOutput" title="InputOutput" version="ver.1.000" helpFilePath="" supportVersion="1.000W" />
+          </Data>
+        </AddData>
+
+        <Variable name="gStart_Button"><Type><TypeName>BOOL</TypeName></Type><Address address="X0" /></Variable>
+        <Variable name="gStop_Button"><Type><TypeName>BOOL</TypeName></Type><Address address="X1" /></Variable>
+        <Variable name="gEmergency_Stop"><Type><TypeName>BOOL</TypeName></Type><Address address="X2" /></Variable>
+        <Variable name="gOverload_Relay"><Type><TypeName>BOOL</TypeName></Type><Address address="X3" /></Variable>
+        <Variable name="gThermal_Switch"><Type><TypeName>BOOL</TypeName></Type><Address address="X4" /></Variable>
+        <Variable name="gMotor_Feedback"><Type><TypeName>BOOL</TypeName></Type><Address address="X5" /></Variable>
+
+        <Variable name="gMotor_Contactor"><Type><TypeName>BOOL</TypeName></Type><Address address="Y0" /></Variable>
+        <Variable name="gRun_Indicator"><Type><TypeName>BOOL</TypeName></Type><Address address="Y1" /></Variable>
+        <Variable name="gFault_Indicator"><Type><TypeName>BOOL</TypeName></Type><Address address="Y2" /></Variable>
+        <Variable name="gReady_Indicator"><Type><TypeName>BOOL</TypeName></Type><Address address="Y3" /></Variable>
+
+      </GlobalVars>
+
+    </Configuration>
+  </Instances>
+</Project>

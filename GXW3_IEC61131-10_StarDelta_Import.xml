@@ -1,0 +1,330 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="www.iec.ch/public/TC65SC65BWG7TF10" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" schemaVersion="1.000" xsi:schemaLocation="www.iec.ch/public/TC65SC65BWG7TF10 GXW3_IEC61131_10_Ed1_0_ForGXW3.xsd">
+  <FileHeader companyName="MITSUBISHI ELECTRIC CORPORATION" companyURL="http://www.mitsubishielectric.com" productName="GX Works3" productVersion="ver.1.0" />
+  <ContentHeader name="星三角启动" creationDateTime="2025-12-19T15:05:00+08:00" modificationDateTime="2025-12-19T15:05:01+08:00" />
+  <Types>
+    <GlobalNamespace>
+      <AddData>
+        <Data name="http://www.mitsubishielectric.com/xml/FbFiles" handleUnknown="implementation">
+          <FbFiles>
+            <FbFile name="FbFile1" functionBlockType="macro" />
+          </FbFiles>
+        </Data>
+      </AddData>
+
+      <FunctionBlock name="FB_StarDeltaStarter">
+        <AddData>
+          <Data name="http://www.mitsubishielectric.com/xml/PouProperties" handleUnknown="implementation">
+            <PouProperties title="FB_StarDeltaStarter" version="ver.1.000" helpFilePath="" supportVersion="1.000W" />
+          </Data>
+          <Data name="http://www.mitsubishielectric.com/xml/FbPouProperties" handleUnknown="implementation">
+            <FbPouProperties isEnEno="false" isMcMcr="false" labelAssignmentArea="20" latchLabelAssignmentArea="12" signalFlowAssignmentArea="5" />
+          </Data>
+          <Data name="http://www.mitsubishielectric.com/xml/FbPouFile" handleUnknown="implementation">
+            <FbPouFile name="FbFile1" />
+          </Data>
+        </AddData>
+
+        <Parameters>
+          <InputVars>
+            <Variable name="iStartPB" orderWithinParamSet="1"><Type><TypeName>BOOL</TypeName></Type></Variable>
+            <Variable name="iStopPB" orderWithinParamSet="2"><Type><TypeName>BOOL</TypeName></Type></Variable>
+            <Variable name="iEnable" orderWithinParamSet="3"><Type><TypeName>BOOL</TypeName></Type></Variable>
+            <Variable name="iThermalTrip" orderWithinParamSet="4"><Type><TypeName>BOOL</TypeName></Type></Variable>
+            <Variable name="iStarTime" orderWithinParamSet="5"><Type><TypeName>TIME</TypeName></Type></Variable>
+            <Variable name="iTransTime" orderWithinParamSet="6"><Type><TypeName>TIME</TypeName></Type></Variable>
+            <Variable name="iStartTimeout" orderWithinParamSet="7"><Type><TypeName>TIME</TypeName></Type></Variable>
+            <Variable name="iThermalDelay" orderWithinParamSet="8"><Type><TypeName>TIME</TypeName></Type></Variable>
+          </InputVars>
+          <OutputVars>
+            <Variable name="qMainKM" orderWithinParamSet="9"><Type><TypeName>BOOL</TypeName></Type></Variable>
+            <Variable name="qStarKM" orderWithinParamSet="10"><Type><TypeName>BOOL</TypeName></Type></Variable>
+            <Variable name="qDeltaKM" orderWithinParamSet="11"><Type><TypeName>BOOL</TypeName></Type></Variable>
+            <Variable name="qRunLamp" orderWithinParamSet="12"><Type><TypeName>BOOL</TypeName></Type></Variable>
+            <Variable name="qFaultLamp" orderWithinParamSet="13"><Type><TypeName>BOOL</TypeName></Type></Variable>
+            <Variable name="qFaultOut" orderWithinParamSet="14"><Type><TypeName>BOOL</TypeName></Type></Variable>
+            <Variable name="qState" orderWithinParamSet="15"><Type><TypeName>INT</TypeName></Type></Variable>
+          </OutputVars>
+        </Parameters>
+
+        <Vars constant="false" accessSpecifier="private">
+          <Variable name="start_prev"><Type><TypeName>BOOL</TypeName></Type></Variable>
+          <Variable name="stop_prev"><Type><TypeName>BOOL</TypeName></Type></Variable>
+          <Variable name="start_edge"><Type><TypeName>BOOL</TypeName></Type></Variable>
+          <Variable name="stop_edge"><Type><TypeName>BOOL</TypeName></Type></Variable>
+          <Variable name="state"><Type><TypeName>INT</TypeName></Type></Variable>
+          <Variable name="tStar"><Type><TypeName>TON</TypeName></Type></Variable>
+          <Variable name="tTrans"><Type><TypeName>TON</TypeName></Type></Variable>
+          <Variable name="tTimeout"><Type><TypeName>TON</TypeName></Type></Variable>
+          <Variable name="tThermal"><Type><TypeName>TON</TypeName></Type></Variable>
+          <Variable name="thermalFault"><Type><TypeName>BOOL</TypeName></Type></Variable>
+          <Variable name="timeoutFault"><Type><TypeName>BOOL</TypeName></Type></Variable>
+          <Variable name="timeoutFaultLatched"><Type><TypeName>BOOL</TypeName></Type></Variable>
+        </Vars>
+
+        <MainBody>
+          <BodyContent xsi:type="ST">
+            <ST>(*
+   星-三角启动控制（FB_StarDeltaStarter）
+   - 状态机：STOP(0) -> STAR(10) -> TRANS(20) -> DELTA(30)
+   - 互锁：TRANS 阶段星/三角均断开，逻辑上避免星/三角重叠吸合（建议硬件侧也做电气互锁）
+   - 保护：启动超时（STAR+TRANS）/ 热继动作（带可调滤波确认时间）
+   - 超时故障锁存：触发后需按 Stop 清除锁存，避免故障刚恢复就自动允许重启
+*)
+
+(* ========= 按钮上升沿检测 ========= *)
+start_edge := iStartPB AND NOT start_prev;
+stop_edge  := iStopPB AND NOT stop_prev;
+start_prev := iStartPB;
+stop_prev  := iStopPB;
+
+(* ========= 热继动作确认（滤波/延时） ========= *)
+tThermal(IN := iThermalTrip, PT := iThermalDelay);
+thermalFault := tThermal.Q;
+
+(* ========= 定时器：由状态驱动 ========= *)
+tStar(IN := (state = 10), PT := iStarTime);
+tTrans(IN := (state = 20), PT := iTransTime);
+tTimeout(IN := (state = 10) OR (state = 20), PT := iStartTimeout);
+
+(* ========= 启动超时保护 ========= *)
+timeoutFault := tTimeout.Q AND ((state = 10) OR (state = 20));
+
+(* 超时故障锁存：一旦触发锁存为 TRUE；按 Stop 清除锁存 *)
+IF timeoutFault THEN
+    timeoutFaultLatched := TRUE;
+END_IF;
+
+IF stop_edge THEN
+    timeoutFaultLatched := FALSE;
+END_IF;
+
+(* ========= 输出组合：严格互锁 ========= *)
+IF state = 0 THEN
+    qMainKM := FALSE;
+    qStarKM := FALSE;
+    qDeltaKM := FALSE;
+ELSIF state = 10 THEN
+    qMainKM := TRUE;
+    qStarKM := TRUE;
+    qDeltaKM := FALSE;
+ELSIF state = 20 THEN
+    qMainKM := TRUE;
+    qStarKM := FALSE;
+    qDeltaKM := FALSE;
+ELSIF state = 30 THEN
+    qMainKM := TRUE;
+    qStarKM := FALSE;
+    qDeltaKM := TRUE;
+ELSE
+    qMainKM := FALSE;
+    qStarKM := FALSE;
+    qDeltaKM := FALSE;
+END_IF;
+
+(* 指示灯/故障输出：按状态输出 *)
+qRunLamp := (state = 10) OR (state = 20) OR (state = 30);
+qFaultLamp := (state = 99);
+qFaultOut := (state = 99);
+qState := state;
+
+(* ========= 状态机 ========= *)
+CASE state OF
+    0:
+        (* STOP：等待启动。使能有效且无热继故障才允许启动 *)
+        IF start_edge AND iEnable AND (NOT thermalFault) THEN
+            state := 10;
+        END_IF;
+
+    10:
+        (* STAR：主+星吸合。到达星形时间后进入切换空档；停止/失能/故障/超时立即退出 *)
+        IF (NOT iEnable) OR stop_edge THEN
+            state := 0;
+        ELSIF thermalFault OR timeoutFault THEN
+            state := 99;
+        ELSIF tStar.Q THEN
+            state := 20;
+        END_IF;
+
+    20:
+        (* TRANS：切换空档（仅主吸合，星/三角均断开）。
+           该空档时间用于避免星/三角接触器切换时可能出现的重叠吸合风险；等待空档时间到后进入三角。
+           停止/失能/故障/超时立即退出。
+        *)
+        IF (NOT iEnable) OR stop_edge THEN
+            state := 0;
+        ELSIF thermalFault OR timeoutFault THEN
+            state := 99;
+        ELSIF tTrans.Q THEN
+            state := 30;
+        END_IF;
+
+    30:
+        (* DELTA：主+三角吸合运行。停止/失能/热继故障立即退出 *)
+        IF (NOT iEnable) OR stop_edge THEN
+            state := 0;
+        ELSIF thermalFault THEN
+            state := 99;
+        END_IF;
+
+    99:
+        (* FAULT：故障停机。
+           - Stop 上升沿：复位到 STOP。
+           - 热继恢复且超时锁存已清除后：允许再次按 Start 重启。
+        *)
+        IF stop_edge THEN
+            state := 0;
+        ELSIF (NOT thermalFault) AND (NOT timeoutFaultLatched) THEN
+            IF start_edge AND iEnable THEN
+                state := 10;
+            END_IF;
+        END_IF;
+
+    ELSE
+        state := 0;
+END_CASE;
+</ST>
+          </BodyContent>
+        </MainBody>
+      </FunctionBlock>
+
+      <Program name="星三角启动">
+        <AddData>
+          <Data name="http://www.mitsubishielectric.com/xml/PouProperties" handleUnknown="implementation">
+            <PouProperties title="星三角启动" version="ver.1.000" helpFilePath="" supportVersion="1.000W" />
+          </Data>
+        </AddData>
+
+        <Vars constant="false" accessSpecifier="private">
+          <Variable name="fbSD"><Type><TypeName>FB_StarDeltaStarter</TypeName></Type></Variable>
+        </Vars>
+
+        <MainBody>
+          <BodyContent xsi:type="ST">
+            <ST>(*
+   主程序：星三角启动
+   - 通过全局标签（gStartPB/gStopPB/gThermalTrip/...）调用 FB_StarDeltaStarter
+   - 实际项目中可按现场 I/O 点位修改全局标签的设备地址
+ 
+   参数设定说明：
+   - 关键时间参数绑定到 R 文件寄存器（保持区），现场可直接修改寄存器/标签调整参数。
+   - 参数寄存器映射（TIME 类型通常占用 2 个字，因此地址按 2 间隔分配）：
+     - gStarTime      (星形保持时间)             -&gt; R100
+     - gTransTime     (星-&gt;三角切换空档/过渡延时) -&gt; R102
+     - gStartTimeout  (启动超时保护)             -&gt; R104
+     - gThermalDelay  (热继动作确认/滤波时间)     -&gt; R106
+
+   时间变量寄存器数据格式（当你“直接改 R 寄存器数值”而不是在标签里输入 T#5S 这类时间字面量时）：
+   - TIME 在设备寄存器中按 32bit 时间值存放（单位：ms），占用连续 2 个 16bit 寄存器。
+   - 存放顺序：低字在起始地址（如 gStarTime: R100），高字在起始地址+1（如 gStarTime: R101）。
+   - 示例（十进制写入最直观）：
+     - T#5S      = 5000ms  -&gt; R100=5000,  R101=0
+     - T#6000MS  = 6000ms  -&gt; R102=6000,  R103=0
+     - T#10000MS = 10000ms -&gt; R104=10000, R105=0
+     - T#1000MS  = 1000ms  -&gt; R106=1000,  R107=0
+   - 若时间值 &gt; 65535ms（约 65.535s），高字将不为 0；此时需同时正确填写低字/高字。
+*)
+
+   (* FB 输入：按钮/使能/热继/可调时间参数
+      - gTransTime：星-&gt;三角切换空档时间（过渡延时），用于避免星/三角接触器切换时重叠吸合
+      - gThermalDelay：热继动作确认/滤波时间（避免触点抖动/干扰导致误停机）
+      FB 输出：主/星/三角接触器 + 运行/故障指示 + 故障输出 + 状态码
+   *)
+
+   (* ========= 参数默认值初始化（在主程序内直接赋值） =========
+      说明：
+      - gTransTime / gThermalDelay / gStartTimeout 绑定到 R 文件寄存器（保持区），现场可能会直接改寄存器数值。
+      - 若这里每一扫描都强制赋值，会覆盖现场调好的参数。
+      - 因此采用“仅在值为 0 时写入默认值”的方式：
+        - 首次下载/上电且未设定时，自动写入默认值；
+        - 现场改过后，不会被程序反复覆盖。
+   *)
+   IF gTransTime = T#0MS THEN
+       gTransTime := T#6000MS;
+   END_IF;
+
+   IF gThermalDelay = T#0MS THEN
+       gThermalDelay := T#1000MS;
+   END_IF;
+
+   IF gStartTimeout = T#0MS THEN
+       gStartTimeout := T#10000MS;
+   END_IF;
+
+fbSD(
+    iStartPB := gStartPB,
+    iStopPB := gStopPB,
+    iEnable := gEnable,
+    iThermalTrip := gThermalTrip,
+    iStarTime := gStarTime,
+    iTransTime := gTransTime,
+    iStartTimeout := gStartTimeout,
+    iThermalDelay := gThermalDelay,
+    qMainKM =&gt; gMainKM,
+    qStarKM =&gt; gStarKM,
+    qDeltaKM =&gt; gDeltaKM,
+    qRunLamp =&gt; gRunLamp,
+    qFaultLamp =&gt; gFaultLamp,
+    qFaultOut =&gt; gFaultOut,
+    qState =&gt; gState
+);
+</ST>
+          </BodyContent>
+        </MainBody>
+      </Program>
+
+    </GlobalNamespace>
+  </Types>
+
+  <Instances>
+    <Configuration name="config1">
+      <Resource name="MainScan" resourceTypeName="prgFile">
+        <AddData>
+          <Data name="http://www.mitsubishielectric.com/xml/ProgramFileProperties" handleUnknown="implementation">
+            <ProgramFileProperties title="MainScan" />
+          </Data>
+          <Data name="http://www.mitsubishielectric.com/xml/ResourceExecutionType" handleUnknown="implementation">
+            <ResourceExecutionType type="scan" />
+          </Data>
+        </AddData>
+        <ProgramInstance name="星三角启动" typeName="pou" evaluationOrder="1" />
+      </Resource>
+
+      <GlobalVars constant="false">
+        <AddData>
+          <Data name="http://www.mitsubishielectric.com/xml/GlobalVarsProperties" handleUnknown="implementation">
+            <GlobalVarsProperties name="Global1" title="Global1" version="ver.1.000" helpFilePath="" supportVersion="1.000W" />
+          </Data>
+        </AddData>
+
+        <Variable name="gStartPB"><Type><TypeName>BOOL</TypeName></Type><Address address="X0" /></Variable>
+        <Variable name="gStopPB"><Type><TypeName>BOOL</TypeName></Type><Address address="X1" /></Variable>
+        <Variable name="gThermalTrip"><Type><TypeName>BOOL</TypeName></Type><Address address="X2" /></Variable>
+        <Variable name="gEnable"><Type><TypeName>BOOL</TypeName></Type><InitialValue><SimpleValue value="TRUE" /></InitialValue><Address address="M0" /></Variable>
+
+        <Variable name="gMainKM"><Type><TypeName>BOOL</TypeName></Type><Address address="Y0" /></Variable>
+        <Variable name="gStarKM"><Type><TypeName>BOOL</TypeName></Type><Address address="Y1" /></Variable>
+        <Variable name="gDeltaKM"><Type><TypeName>BOOL</TypeName></Type><Address address="Y2" /></Variable>
+        <Variable name="gRunLamp"><Type><TypeName>BOOL</TypeName></Type><Address address="Y3" /></Variable>
+        <Variable name="gFaultLamp"><Type><TypeName>BOOL</TypeName></Type><Address address="Y4" /></Variable>
+        <Variable name="gFaultOut"><Type><TypeName>BOOL</TypeName></Type><Address address="Y5" /></Variable>
+
+        <Variable name="gState"><Type><TypeName>INT</TypeName></Type><InitialValue><SimpleValue value="0" /></InitialValue></Variable>
+      </GlobalVars>
+
+      <GlobalVars constant="false">
+        <AddData>
+          <Data name="http://www.mitsubishielectric.com/xml/GlobalVarsProperties" handleUnknown="implementation">
+            <GlobalVarsProperties name="ParamRetain" title="ParamRetain" version="ver.1.000" helpFilePath="" supportVersion="1.000W" />
+          </Data>
+        </AddData>
+
+        <Variable name="gStarTime"><Type><TypeName>TIME</TypeName></Type><InitialValue><SimpleValue value="T#5S" /></InitialValue><Address address="R100" /></Variable>
+        <Variable name="gTransTime"><Type><TypeName>TIME</TypeName></Type><InitialValue><SimpleValue value="T#6000MS" /></InitialValue><Address address="R102" /></Variable>
+        <Variable name="gStartTimeout"><Type><TypeName>TIME</TypeName></Type><InitialValue><SimpleValue value="T#10000MS" /></InitialValue><Address address="R104" /></Variable>
+        <Variable name="gThermalDelay"><Type><TypeName>TIME</TypeName></Type><InitialValue><SimpleValue value="T#1000MS" /></InitialValue><Address address="R106" /></Variable>
+      </GlobalVars>
+
+    </Configuration>
+  </Instances>
+</Project>

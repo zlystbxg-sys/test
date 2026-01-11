@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="www.iec.ch/public/TC65SC65BWG7TF10" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" schemaVersion="1.000" xsi:schemaLocation="www.iec.ch/public/TC65SC65BWG7TF10 GXW3_IEC61131_10_Ed1_0_ForGXW3.xsd">
+  <FileHeader companyName="MITSUBISHI ELECTRIC CORPORATION" companyURL="http://www.mitsubishielectric.com" productName="GX Works3" productVersion="ver.1.0" />
+  <ContentHeader name="项目模板" creationDateTime="2026-01-11T15:15:00+10:00" modificationDateTime="2026-01-11T15:15:01+10:00" />
+  <Types>
+    <GlobalNamespace>
+      <AddData>
+        <Data name="http://www.mitsubishielectric.com/xml/FbFiles" handleUnknown="implementation">
+          <FbFiles>
+            <FbFile name="FbFile1" functionBlockType="macro" />
+          </FbFiles>
+        </Data>
+      </AddData>
+
+      <Program name="Main_Program">
+        <AddData>
+          <Data name="http://www.mitsubishielectric.com/xml/PouProperties" handleUnknown="implementation">
+            <PouProperties title="Main_Program" version="ver.1.000" helpFilePath="" supportVersion="1.000W" />
+          </Data>
+        </AddData>
+
+        <Vars constant="false" accessSpecifier="private">
+          <!-- 在此添加局部变量 -->
+          <!-- 示例: <Variable name="LocalVar1"><Type><TypeName>BOOL</TypeName></Type></Variable> -->
+        </Vars>
+
+        <MainBody>
+          <BodyContent xsi:type="ST">
+            <ST>(*
+================================================================================
+PLC程序模板
+功能: [在此描述程序功能]
+作者: [作者名称]
+日期: [创建日期]
+版本: V1.0
+================================================================================
+*)
+
+(* 在此编写ST代码 *)
+
+</ST>
+          </BodyContent>
+        </MainBody>
+      </Program>
+
+    </GlobalNamespace>
+  </Types>
+
+  <Instances>
+    <Configuration name="config1">
+      <Resource name="MainScan" resourceTypeName="prgFile">
+        <AddData>
+          <Data name="http://www.mitsubishielectric.com/xml/ProgramFileProperties" handleUnknown="implementation">
+            <ProgramFileProperties title="MainScan" />
+          </Data>
+          <Data name="http://www.mitsubishielectric.com/xml/ResourceExecutionType" handleUnknown="implementation">
+            <ResourceExecutionType type="scan" />
+          </Data>
+        </AddData>
+        <ProgramInstance name="Main_Program" typeName="pou" evaluationOrder="1" />
+      </Resource>
+
+      <GlobalVars constant="false">
+        <AddData>
+          <Data name="http://www.mitsubishielectric.com/xml/GlobalVarsProperties" handleUnknown="implementation">
+            <GlobalVarsProperties name="InputOutput" title="InputOutput" version="ver.1.000" helpFilePath="" supportVersion="1.000W" />
+          </Data>
+        </AddData>
+
+        <!-- 输入变量示例 -->
+        <!-- <Variable name="gInput1"><Type><TypeName>BOOL</TypeName></Type><Address address="X0" /></Variable> -->
+        
+        <!-- 输出变量示例 -->
+        <!-- <Variable name="gOutput1"><Type><TypeName>BOOL</TypeName></Type><Address address="Y0" /></Variable> -->
+
+      </GlobalVars>
+
+      <GlobalVars constant="false">
+        <AddData>
+          <Data name="http://www.mitsubishielectric.com/xml/GlobalVarsProperties" handleUnknown="implementation">
+            <GlobalVarsProperties name="Parameters" title="Parameters" version="ver.1.000" helpFilePath="" supportVersion="1.000W" />
+          </Data>
+        </AddData>
+
+        <!-- 参数变量示例 -->
+        <!-- <Variable name="gParam1"><Type><TypeName>TIME</TypeName></Type><InitialValue><SimpleValue value="T#1S" /></InitialValue><Address address="R100" /></Variable> -->
+
+      </GlobalVars>
+
+    </Configuration>
+  </Instances>
+</Project>

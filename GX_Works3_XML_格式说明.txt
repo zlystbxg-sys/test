@@ -1,0 +1,162 @@
+================================================================================
+GX Works3 XML格式说明文档
+================================================================================
+版本: V1.0
+日期: 2026-01-11
+作者: Cascade AI
+基于: GX Works3 ver.1.120A 和 Windsurf生成的XML分析
+================================================================================
+
+一、XML格式要求
+================================================================================
+
+1. 文件头部
+   - 编码: utf-8 (不是utf-16)
+   - 命名空间: www.iec.ch/public/TC65SC65BWG7TF10
+   - 标准: IEC 61131-10 (不是PLCopen TC6)
+
+2. 基本结构
+   <?xml version="1.0" encoding="utf-8"?>
+   <Project xmlns="www.iec.ch/public/TC65SC65BWG7TF10" 
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+            schemaVersion="1.000">
+
+3. 元素大小写
+   - 使用 <Project> 不是 <project>
+   - 使用 <Program> 不是 <program>
+   - 所有主要元素首字母大写
+
+二、XML结构层次
+================================================================================
+
+Project
+├── FileHeader (公司信息)
+├── ContentHeader (项目信息)
+├── Types
+│   └── GlobalNamespace
+│       ├── AddData (必需的FbFiles信息)
+│       ├── FunctionBlock (功能块，可选)
+│       └── Program (主程序)
+└── Instances
+    └── Configuration
+        ├── Resource (程序实例)
+        └── GlobalVars (全局变量，可多组)
+
+三、关键元素模板
+================================================================================
+
+1. 文件头部
+<FileHeader companyName="MITSUBISHI ELECTRIC CORPORATION" 
+            companyURL="http://www.mitsubishielectric.com" 
+            productName="GX Works3" 
+            productVersion="ver.1.0" />
+
+2. 程序定义
+<Program name="程序名称">
+  <AddData>
+    <Data name="http://www.mitsubishielectric.com/xml/PouProperties" handleUnknown="implementation">
+      <PouProperties title="程序名称" version="ver.1.000" helpFilePath="" supportVersion="1.000W" />
+    </Data>
+  </AddData>
+  
+  <Vars constant="false" accessSpecifier="private">
+    <Variable name="变量名"><Type><TypeName>BOOL</TypeName></Type></Variable>
+  </Vars>
+  
+  <MainBody>
+    <BodyContent xsi:type="ST">
+      <ST>(* ST代码 *)</ST>
+    </BodyContent>
+  </MainBody>
+</Program>
+
+3. 全局变量
+<GlobalVars constant="false">
+  <AddData>
+    <Data name="http://www.mitsubishielectric.com/xml/GlobalVarsProperties" handleUnknown="implementation">
+      <GlobalVarsProperties name="组名" title="组名" version="ver.1.000" helpFilePath="" supportVersion="1.000W" />
+    </Data>
+  </AddData>
+  
+  <Variable name="变量名">
+    <Type><TypeName>BOOL</TypeName></Type>
+    <Address address="X0" />
+  </Variable>
+</GlobalVars>
+
+四、数据类型和地址
+================================================================================
+
+数据类型:
+- BOOL: 布尔型
+- INT: 整数型  
+- TIME: 时间型
+- TON: 定时器
+
+地址映射:
+- 输入: X0, X1, X2...
+- 输出: Y0, Y1, Y2...
+- 内部: M0, M1, M2...
+- 寄存器: R100, R102, R104...
+
+初始值设定:
+<InitialValue><SimpleValue value="TRUE" /></InitialValue>
+
+五、常见错误
+================================================================================
+
+❌ 错误做法:
+- encoding="UTF-16"
+- xmlns="http://www.plcopen.org/xml/tc6_0201"
+- <project>, <program>
+- 缺少AddData元素
+
+✅ 正确做法:
+- encoding="utf-8"
+- xmlns="www.iec.ch/public/TC65SC65BWG7TF10"
+- <Project>, <Program>
+- 包含所有必需的AddData
+
+六、导入步骤
+================================================================================
+
+1. 打开GX Works3
+2. 文件 → 导入
+3. 选择 "IEC 61131-10"
+4. 选择XML文件
+5. 确认导入
+
+七、最佳实践
+================================================================================
+
+1. 使用Windsurf生成XML (最可靠)
+2. 按功能分组全局变量
+3. 合理规划I/O地址
+4. 添加详细的ST代码注释
+5. 维护版本信息
+
+八、项目文件说明
+================================================================================
+
+本目录包含以下文件:
+
+核心文件:
+- FX5U_Motor_Control.st                    : 原始ST程序源码
+- FX5U_Motor_Control_Windsurf_Format.xml  : 正确格式的可导入XML
+- GXW3_IEC61131-10_StarDelta_Import.xml   : Windsurf生成的参考样本
+- GX_Works3_XML_Template.xml              : 项目模板文件
+
+文档文件:
+- GX_Works3_XML_Format_Guide.md           : 详细技术指南
+- GX_Works3_XML_格式说明.txt              : 本说明文件
+
+项目文件:
+- motor_control.gx3                       : GX Works3项目文件
+
+================================================================================
+使用建议:
+1. 新项目时复制模板文件修改
+2. 参考样本文件了解复杂结构
+3. 遇到问题查阅详细指南
+4. 优先使用Windsurf生成XML
+================================================================================

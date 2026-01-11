@@ -1,0 +1,232 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="www.iec.ch/public/TC65SC65BWG7TF10" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" schemaVersion="1.000" xsi:schemaLocation="www.iec.ch/public/TC65SC65BWG7TF10 GXW3_IEC61131_10_Ed1_0_ForGXW3.xsd">
+  <FileHeader companyName="MITSUBISHI ELECTRIC CORPORATION" companyURL="http://www.mitsubishielectric.com" productName="GX Works3" productVersion="ver.1.0" />
+  <ContentHeader name="PLC程序模板" creationDateTime="2026-01-11T15:30:00+10:00" modificationDateTime="2026-01-11T15:30:01+10:00" />
+  <Types>
+    <GlobalNamespace>
+      <AddData>
+        <Data name="http://www.mitsubishielectric.com/xml/FbFiles" handleUnknown="implementation">
+          <FbFiles>
+            <FbFile name="FbFile1" functionBlockType="macro" />
+          </FbFiles>
+        </Data>
+      </AddData>
+
+      <Program name="Main_Program_Template">
+        <AddData>
+          <Data name="http://www.mitsubishielectric.com/xml/PouProperties" handleUnknown="implementation">
+            <PouProperties title="Main_Program_Template" version="ver.1.000" helpFilePath="" supportVersion="1.000W" />
+          </Data>
+        </AddData>
+
+        <Vars constant="false" accessSpecifier="private">
+          <!-- 控制逻辑变量 -->
+          <Variable name="System_Enable"><Type><TypeName>BOOL</TypeName></Type></Variable>
+          <Variable name="Run_Command"><Type><TypeName>BOOL</TypeName></Type></Variable>
+          <Variable name="Protection_OK"><Type><TypeName>BOOL</TypeName></Type></Variable>
+          <Variable name="Start_Condition"><Type><TypeName>BOOL</TypeName></Type></Variable>
+          <Variable name="Stop_Condition"><Type><TypeName>BOOL</TypeName></Type></Variable>
+          
+          <!-- 状态变量 -->
+          <Variable name="System_State"><Type><TypeName>INT</TypeName></Type></Variable>
+          <Variable name="Fault_Code"><Type><TypeName>INT</TypeName></Type></Variable>
+          <Variable name="Operation_Mode"><Type><TypeName>INT</TypeName></Type></Variable>
+          
+          <!-- 故障检测变量 -->
+          <Variable name="Fault_Status"><Type><TypeName>BOOL</TypeName></Type></Variable>
+          <Variable name="Emergency_Fault"><Type><TypeName>BOOL</TypeName></Type></Variable>
+          <Variable name="Overload_Fault"><Type><TypeName>BOOL</TypeName></Type></Variable>
+          <Variable name="Thermal_Fault"><Type><TypeName>BOOL</TypeName></Type></Variable>
+          <Variable name="Timeout_Fault"><Type><TypeName>BOOL</TypeName></Type></Variable>
+          
+          <!-- 定时器 -->
+          <Variable name="Start_Delay_Timer"><Type><TypeName>TON</TypeName></Type></Variable>
+          <Variable name="Stop_Delay_Timer"><Type><TypeName>TON</TypeName></Type></Variable>
+          <Variable name="Fault_Reset_Timer"><Type><TypeName>TON</TypeName></Type></Variable>
+          <Variable name="Watchdog_Timer"><Type><TypeName>TON</TypeName></Type></Variable>
+          <Variable name="Blink_Timer"><Type><TypeName>TON</TypeName></Type></Variable>
+          
+          <!-- 计数器 -->
+          <Variable name="Start_Counter"><Type><TypeName>CTU</TypeName></Type></Variable>
+          <Variable name="Fault_Counter"><Type><TypeName>CTU</TypeName></Type></Variable>
+          
+          <!-- 时间常数 -->
+          <Variable name="START_DELAY_TIME"><Type><TypeName>TIME</TypeName></Type></Variable>
+          <Variable name="STOP_DELAY_TIME"><Type><TypeName>TIME</TypeName></Type></Variable>
+          <Variable name="FAULT_RESET_TIME"><Type><TypeName>TIME</TypeName></Type></Variable>
+          <Variable name="WATCHDOG_TIME"><Type><TypeName>TIME</TypeName></Type></Variable>
+          <Variable name="BLINK_TIME"><Type><TypeName>TIME</TypeName></Type></Variable>
+        </Vars>
+
+        <MainBody>
+          <BodyContent xsi:type="ST">
+            <ST>(*
+================================================================================
+PLC程序模板 - 可根据具体项目需求修改
+================================================================================
+*)
+
+(* ========== 参数初始化 ========== *)
+IF START_DELAY_TIME = T#0MS THEN
+    START_DELAY_TIME := T#500MS;
+END_IF;
+
+IF STOP_DELAY_TIME = T#0MS THEN
+    STOP_DELAY_TIME := T#200MS;
+END_IF;
+
+IF FAULT_RESET_TIME = T#0MS THEN
+    FAULT_RESET_TIME := T#3S;
+END_IF;
+
+IF WATCHDOG_TIME = T#0MS THEN
+    WATCHDOG_TIME := T#5S;
+END_IF;
+
+IF BLINK_TIME = T#0MS THEN
+    BLINK_TIME := T#500MS;
+END_IF;
+
+(* ========== 保护条件检查 ========== *)
+Protection_OK := gEmergency_Stop AND gOverload_Relay AND gThermal_Switch;
+
+(* ========== 故障检测 ========== *)
+Emergency_Fault := NOT gEmergency_Stop;
+Overload_Fault := NOT gOverload_Relay;
+Thermal_Fault := NOT gThermal_Switch;
+Fault_Status := Emergency_Fault OR Overload_Fault OR Thermal_Fault OR Timeout_Fault;
+
+(* ========== 启动/停止条件 ========== *)
+Start_Condition := gStart_Button AND Protection_OK AND NOT Fault_Status AND System_Enable;
+Stop_Condition := gStop_Button OR Fault_Status;
+
+(* ========== 定时器处理 ========== *)
+Start_Delay_Timer(
+    IN := Start_Condition AND NOT Run_Command,
+    PT := START_DELAY_TIME
+);
+
+Fault_Reset_Timer(
+    IN := Protection_OK AND Fault_Status,
+    PT := FAULT_RESET_TIME
+);
+
+Blink_Timer(
+    IN := TRUE,
+    PT := BLINK_TIME
+);
+
+(* ========== 主控制逻辑 ========== *)
+IF Start_Delay_Timer.Q THEN
+    Run_Command := TRUE;
+ELSIF Stop_Condition THEN
+    Run_Command := FALSE;
+END_IF;
+
+(* ========== 状态机控制 ========== *)
+CASE System_State OF
+    0: (* 停止状态 *)
+        IF Start_Delay_Timer.Q THEN
+            System_State := 2;
+        END_IF;
+        
+    2: (* 运行状态 *)
+        IF Stop_Condition THEN
+            System_State := 0;
+        END_IF;
+        
+    99: (* 故障状态 *)
+        IF Fault_Reset_Timer.Q THEN
+            System_State := 0;
+        END_IF;
+        
+    ELSE
+        System_State := 0;
+END_CASE;
+
+(* ========== 输出控制 ========== *)
+gMain_Contactor := Run_Command AND Protection_OK;
+gReady_Indicator := (System_State = 0) AND Protection_OK AND NOT Fault_Status;
+gRun_Indicator := (System_State = 2);
+gFault_Indicator := Fault_Status AND Blink_Timer.Q;
+</ST>
+          </BodyContent>
+        </MainBody>
+      </Program>
+
+    </GlobalNamespace>
+  </Types>
+
+  <Instances>
+    <Configuration name="config1">
+      <Resource name="MainScan" resourceTypeName="prgFile">
+        <AddData>
+          <Data name="http://www.mitsubishielectric.com/xml/ProgramFileProperties" handleUnknown="implementation">
+            <ProgramFileProperties title="MainScan" />
+          </Data>
+          <Data name="http://www.mitsubishielectric.com/xml/ResourceExecutionType" handleUnknown="implementation">
+            <ResourceExecutionType type="scan" />
+          </Data>
+        </AddData>
+        <ProgramInstance name="Main_Program_Template" typeName="pou" evaluationOrder="1" />
+      </Resource>
+
+      <!-- 基本I/O组 -->
+      <GlobalVars constant="false">
+        <AddData>
+          <Data name="http://www.mitsubishielectric.com/xml/GlobalVarsProperties" handleUnknown="implementation">
+            <GlobalVarsProperties name="BasicIO" title="BasicIO" version="ver.1.000" helpFilePath="" supportVersion="1.000W" />
+          </Data>
+        </AddData>
+
+        <!-- 基本输入 -->
+        <Variable name="gStart_Button"><Type><TypeName>BOOL</TypeName></Type><Address address="X0" /></Variable>
+        <Variable name="gStop_Button"><Type><TypeName>BOOL</TypeName></Type><Address address="X1" /></Variable>
+        <Variable name="gReset_Button"><Type><TypeName>BOOL</TypeName></Type><Address address="X2" /></Variable>
+        <Variable name="gEmergency_Stop"><Type><TypeName>BOOL</TypeName></Type><Address address="X3" /></Variable>
+        <Variable name="gOverload_Relay"><Type><TypeName>BOOL</TypeName></Type><Address address="X4" /></Variable>
+        <Variable name="gThermal_Switch"><Type><TypeName>BOOL</TypeName></Type><Address address="X5" /></Variable>
+        
+        <!-- 基本输出 -->
+        <Variable name="gMain_Contactor"><Type><TypeName>BOOL</TypeName></Type><Address address="Y0" /></Variable>
+        <Variable name="gRun_Indicator"><Type><TypeName>BOOL</TypeName></Type><Address address="Y1" /></Variable>
+        <Variable name="gFault_Indicator"><Type><TypeName>BOOL</TypeName></Type><Address address="Y2" /></Variable>
+        <Variable name="gReady_Indicator"><Type><TypeName>BOOL</TypeName></Type><Address address="Y3" /></Variable>
+
+      </GlobalVars>
+
+      <!-- 扩展I/O组 -->
+      <GlobalVars constant="false">
+        <AddData>
+          <Data name="http://www.mitsubishielectric.com/xml/GlobalVarsProperties" handleUnknown="implementation">
+            <GlobalVarsProperties name="ExtendedIO" title="ExtendedIO" version="ver.1.000" helpFilePath="" supportVersion="1.000W" />
+          </Data>
+        </AddData>
+
+        <!-- 扩展输入 -->
+        <Variable name="gDevice_Feedback"><Type><TypeName>BOOL</TypeName></Type><Address address="X6" /></Variable>
+        <Variable name="gPosition_Sensor"><Type><TypeName>BOOL</TypeName></Type><Address address="X7" /></Variable>
+        
+        <!-- 扩展输出 -->
+        <Variable name="gAux_Contactor"><Type><TypeName>BOOL</TypeName></Type><Address address="Y4" /></Variable>
+        <Variable name="gAlarm_Horn"><Type><TypeName>BOOL</TypeName></Type><Address address="Y5" /></Variable>
+
+      </GlobalVars>
+
+      <!-- 参数组 -->
+      <GlobalVars constant="false">
+        <AddData>
+          <Data name="http://www.mitsubishielectric.com/xml/GlobalVarsProperties" handleUnknown="implementation">
+            <GlobalVarsProperties name="Parameters" title="Parameters" version="ver.1.000" helpFilePath="" supportVersion="1.000W" />
+          </Data>
+        </AddData>
+
+        <Variable name="gStartDelayTime"><Type><TypeName>TIME</TypeName></Type><InitialValue><SimpleValue value="T#500MS" /></InitialValue><Address address="R100" /></Variable>
+        <Variable name="gStopDelayTime"><Type><TypeName>TIME</TypeName></Type><InitialValue><SimpleValue value="T#200MS" /></InitialValue><Address address="R102" /></Variable>
+        <Variable name="gFaultResetTime"><Type><TypeName>TIME</TypeName></Type><InitialValue><SimpleValue value="T#3S" /></InitialValue><Address address="R104" /></Variable>
+
+      </GlobalVars>
+
+    </Configuration>
+  </Instances>
+</Project>
