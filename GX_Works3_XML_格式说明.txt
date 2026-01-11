@@ -84,8 +84,62 @@ Project
   </Variable>
 </GlobalVars>
 
-注意：GX Works3的IEC 61131-10格式不支持Documentation元素添加中文注释。
-中文注释需要在导入后手动添加到GX Works3的标签编辑器中。
+重要发现：GX Works3中文注释的正确处理方式
+
+经过测试确认：
+1. XML导入时使用简洁格式（不包含variableComments）
+2. 导入成功后在GX Works3中手动添加中文注释
+3. 导出时可获得包含中文注释的完整XML和CSV文件
+
+正确的导入XML格式（简洁版）：
+<Variable name="变量名">
+  <Type><TypeName>BOOL</TypeName></Type>
+  <Address address="X0" />
+</Variable>
+
+导出的XML格式（包含注释）：
+<variable name="变量名" address="LV:0.0">
+  <type><BOOL /></type>
+  <addData>
+    <data name="http://www.mitsubishielectric.com/xml/variableComments" handleUnknown="implementation">
+      <variableComments>
+        <comment number="1">
+          <html xml:space="preserve" xmlns="http://www.w3.org/1999/xhtml">中文注释内容</html>
+        </comment>
+      </variableComments>
+    </data>
+  </addData>
+</variable>
+
+推荐工作流程：
+1. 使用简洁XML格式导入程序
+2. 在GX Works3标签编辑器中添加中文注释
+3. 导出CSV或XML文件保存完整版本
+
+补充：CSV标签导入格式规范（已验证可导入）
+================================================================================
+
+重要说明：GX Works3“从CSV文件导入”对格式非常敏感。以下规范以从GX Works3导出并验证可正常导入的
+Motor_Control_test1.csv 为标准模板。
+
+1. 编码
+   - 必须为 UTF-16（带BOM）
+
+2. 分隔符
+   - 必须使用 TAB（制表符）分隔列
+   - 不能使用逗号分隔
+
+3. 引号
+   - 每个字段必须使用英文双引号 " 包裹
+
+4. 全局/局部必须分开导入
+   - 全局标签CSV：第1行必须为 "(工程未设置)"
+   - 局部标签CSV：第1行必须为 "(ProgramName)"，例如 "(Motor_Control)"
+   - 不要把全局与局部标签混在同一个CSV文件里导入
+
+5. 标签名必须精确匹配工程内名称
+   - 例如工程内全局变量为 gStart_Button，则CSV的“标签名”列也必须为 gStart_Button
+   - 如果名称不一致，导入会失败或导入后无法对应到正确标签
 
 四、数据类型和地址
 ================================================================================
