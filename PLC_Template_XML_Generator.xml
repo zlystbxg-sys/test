@@ -180,18 +180,78 @@ gFault_Indicator := Fault_Status AND Blink_Timer.Q;
         </AddData>
 
         <!-- 基本输入 -->
-        <Variable name="gStart_Button"><Type><TypeName>BOOL</TypeName></Type><Address address="X0" /></Variable>
-        <Variable name="gStop_Button"><Type><TypeName>BOOL</TypeName></Type><Address address="X1" /></Variable>
-        <Variable name="gReset_Button"><Type><TypeName>BOOL</TypeName></Type><Address address="X2" /></Variable>
-        <Variable name="gEmergency_Stop"><Type><TypeName>BOOL</TypeName></Type><Address address="X3" /></Variable>
-        <Variable name="gOverload_Relay"><Type><TypeName>BOOL</TypeName></Type><Address address="X4" /></Variable>
-        <Variable name="gThermal_Switch"><Type><TypeName>BOOL</TypeName></Type><Address address="X5" /></Variable>
+        <Variable name="gStart_Button">
+          <Type><TypeName>BOOL</TypeName></Type>
+          <Address address="X0" />
+          <Documentation>
+            <xhtml xmlns="http://www.w3.org/1999/xhtml">启动按钮 (X0)</xhtml>
+          </Documentation>
+        </Variable>
+        <Variable name="gStop_Button">
+          <Type><TypeName>BOOL</TypeName></Type>
+          <Address address="X1" />
+          <Documentation>
+            <xhtml xmlns="http://www.w3.org/1999/xhtml">停止按钮 (X1)</xhtml>
+          </Documentation>
+        </Variable>
+        <Variable name="gReset_Button">
+          <Type><TypeName>BOOL</TypeName></Type>
+          <Address address="X2" />
+          <Documentation>
+            <xhtml xmlns="http://www.w3.org/1999/xhtml">复位按钮 (X2)</xhtml>
+          </Documentation>
+        </Variable>
+        <Variable name="gEmergency_Stop">
+          <Type><TypeName>BOOL</TypeName></Type>
+          <Address address="X3" />
+          <Documentation>
+            <xhtml xmlns="http://www.w3.org/1999/xhtml">急停按钮 (X3) - 常闭触点</xhtml>
+          </Documentation>
+        </Variable>
+        <Variable name="gOverload_Relay">
+          <Type><TypeName>BOOL</TypeName></Type>
+          <Address address="X4" />
+          <Documentation>
+            <xhtml xmlns="http://www.w3.org/1999/xhtml">过载继电器 (X4) - 常闭触点</xhtml>
+          </Documentation>
+        </Variable>
+        <Variable name="gThermal_Switch">
+          <Type><TypeName>BOOL</TypeName></Type>
+          <Address address="X5" />
+          <Documentation>
+            <xhtml xmlns="http://www.w3.org/1999/xhtml">热保护开关 (X5) - 常闭触点</xhtml>
+          </Documentation>
+        </Variable>
         
         <!-- 基本输出 -->
-        <Variable name="gMain_Contactor"><Type><TypeName>BOOL</TypeName></Type><Address address="Y0" /></Variable>
-        <Variable name="gRun_Indicator"><Type><TypeName>BOOL</TypeName></Type><Address address="Y1" /></Variable>
-        <Variable name="gFault_Indicator"><Type><TypeName>BOOL</TypeName></Type><Address address="Y2" /></Variable>
-        <Variable name="gReady_Indicator"><Type><TypeName>BOOL</TypeName></Type><Address address="Y3" /></Variable>
+        <Variable name="gMain_Contactor">
+          <Type><TypeName>BOOL</TypeName></Type>
+          <Address address="Y0" />
+          <Documentation>
+            <xhtml xmlns="http://www.w3.org/1999/xhtml">主接触器 (Y0)</xhtml>
+          </Documentation>
+        </Variable>
+        <Variable name="gRun_Indicator">
+          <Type><TypeName>BOOL</TypeName></Type>
+          <Address address="Y1" />
+          <Documentation>
+            <xhtml xmlns="http://www.w3.org/1999/xhtml">运行指示灯 (Y1) - 绿灯</xhtml>
+          </Documentation>
+        </Variable>
+        <Variable name="gFault_Indicator">
+          <Type><TypeName>BOOL</TypeName></Type>
+          <Address address="Y2" />
+          <Documentation>
+            <xhtml xmlns="http://www.w3.org/1999/xhtml">故障指示灯 (Y2) - 红灯</xhtml>
+          </Documentation>
+        </Variable>
+        <Variable name="gReady_Indicator">
+          <Type><TypeName>BOOL</TypeName></Type>
+          <Address address="Y3" />
+          <Documentation>
+            <xhtml xmlns="http://www.w3.org/1999/xhtml">就绪指示灯 (Y3) - 黄灯</xhtml>
+          </Documentation>
+        </Variable>
 
       </GlobalVars>
 
@@ -204,12 +264,36 @@ gFault_Indicator := Fault_Status AND Blink_Timer.Q;
         </AddData>
 
         <!-- 扩展输入 -->
-        <Variable name="gDevice_Feedback"><Type><TypeName>BOOL</TypeName></Type><Address address="X6" /></Variable>
-        <Variable name="gPosition_Sensor"><Type><TypeName>BOOL</TypeName></Type><Address address="X7" /></Variable>
+        <Variable name="gDevice_Feedback">
+          <Type><TypeName>BOOL</TypeName></Type>
+          <Address address="X6" />
+          <Documentation>
+            <xhtml xmlns="http://www.w3.org/1999/xhtml">设备运行反馈 (X6)</xhtml>
+          </Documentation>
+        </Variable>
+        <Variable name="gPosition_Sensor">
+          <Type><TypeName>BOOL</TypeName></Type>
+          <Address address="X7" />
+          <Documentation>
+            <xhtml xmlns="http://www.w3.org/1999/xhtml">位置传感器 (X7)</xhtml>
+          </Documentation>
+        </Variable>
         
         <!-- 扩展输出 -->
-        <Variable name="gAux_Contactor"><Type><TypeName>BOOL</TypeName></Type><Address address="Y4" /></Variable>
-        <Variable name="gAlarm_Horn"><Type><TypeName>BOOL</TypeName></Type><Address address="Y5" /></Variable>
+        <Variable name="gAux_Contactor">
+          <Type><TypeName>BOOL</TypeName></Type>
+          <Address address="Y4" />
+          <Documentation>
+            <xhtml xmlns="http://www.w3.org/1999/xhtml">辅助接触器 (Y4)</xhtml>
+          </Documentation>
+        </Variable>
+        <Variable name="gAlarm_Horn">
+          <Type><TypeName>BOOL</TypeName></Type>
+          <Address address="Y5" />
+          <Documentation>
+            <xhtml xmlns="http://www.w3.org/1999/xhtml">报警蜂鸣器 (Y5)</xhtml>
+          </Documentation>
+        </Variable>
 
       </GlobalVars>
 
@@ -221,9 +305,30 @@ gFault_Indicator := Fault_Status AND Blink_Timer.Q;
           </Data>
         </AddData>
 
-        <Variable name="gStartDelayTime"><Type><TypeName>TIME</TypeName></Type><InitialValue><SimpleValue value="T#500MS" /></InitialValue><Address address="R100" /></Variable>
-        <Variable name="gStopDelayTime"><Type><TypeName>TIME</TypeName></Type><InitialValue><SimpleValue value="T#200MS" /></InitialValue><Address address="R102" /></Variable>
-        <Variable name="gFaultResetTime"><Type><TypeName>TIME</TypeName></Type><InitialValue><SimpleValue value="T#3S" /></InitialValue><Address address="R104" /></Variable>
+        <Variable name="gStartDelayTime">
+          <Type><TypeName>TIME</TypeName></Type>
+          <InitialValue><SimpleValue value="T#500MS" /></InitialValue>
+          <Address address="R100" />
+          <Documentation>
+            <xhtml xmlns="http://www.w3.org/1999/xhtml">启动延时时间 (R100)</xhtml>
+          </Documentation>
+        </Variable>
+        <Variable name="gStopDelayTime">
+          <Type><TypeName>TIME</TypeName></Type>
+          <InitialValue><SimpleValue value="T#200MS" /></InitialValue>
+          <Address address="R102" />
+          <Documentation>
+            <xhtml xmlns="http://www.w3.org/1999/xhtml">停止延时时间 (R102)</xhtml>
+          </Documentation>
+        </Variable>
+        <Variable name="gFaultResetTime">
+          <Type><TypeName>TIME</TypeName></Type>
+          <InitialValue><SimpleValue value="T#3S" /></InitialValue>
+          <Address address="R104" />
+          <Documentation>
+            <xhtml xmlns="http://www.w3.org/1999/xhtml">故障复位时间 (R104)</xhtml>
+          </Documentation>
+        </Variable>
 
       </GlobalVars>
 

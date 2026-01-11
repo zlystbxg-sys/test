@@ -70,7 +70,7 @@ Project
   </MainBody>
 </Program>
 
-3. 全局变量
+3. 全局变量（含中文注释）
 <GlobalVars constant="false">
   <AddData>
     <Data name="http://www.mitsubishielectric.com/xml/GlobalVarsProperties" handleUnknown="implementation">
@@ -81,6 +81,9 @@ Project
   <Variable name="变量名">
     <Type><TypeName>BOOL</TypeName></Type>
     <Address address="X0" />
+    <Documentation>
+      <xhtml xmlns="http://www.w3.org/1999/xhtml">中文说明 (X0)</xhtml>
+    </Documentation>
   </Variable>
 </GlobalVars>
 
